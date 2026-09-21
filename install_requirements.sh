@@ -16,5 +16,10 @@ pip install --root-user-action=ignore "setuptools<81"
 # regular pip requirements
 pip install --root-user-action=ignore --no-build-isolation -r pip_requirements.txt
 
+# Claude (2026-09-21): CUDA-only mamba extra, split out of pip_requirements.txt
+# so the package installs on machines without nvcc. Needs the conda cuda
+# install above.
+pip install --root-user-action=ignore --no-build-isolation -r pip_requirements_mamba.txt
+
 # install xMIL from the local checkout
 pip install --root-user-action=ignore --no-deps -e .

@@ -1,0 +1,5 @@
+# CUDA-only extra: requires nvcc at build time, no macOS/CPU wheels.
+mamba-ssm==2.2.2
+causal-conv1d==1.4.0
+# Compatibility with mamba-ssm 2.2.2 generation imports.
+transformers==4.40.0

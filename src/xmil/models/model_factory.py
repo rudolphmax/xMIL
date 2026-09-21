@@ -8,8 +8,35 @@ from xmil.models.additive_mil import (
     DefaultMILGraph,
     xAdditiveMIL,
 )
-from xmil.models.mamba_mil import MambaMILModel, xMambaMIL
 from xmil.models.utils import ModelEngine
+
+# Claude (2026-09-21): mamba-ssm/causal-conv1d are a CUDA-only optional extra
+# (they need nvcc at build time and ship no CPU/macOS wheels), so the Mamba
+# models are imported lazily. Everything else in the factory stays importable
+# without them.
+_MAMBA_INSTALL_HINT = (
+    "aggregation_model='mamba_mil' requires the optional 'mamba' extra "
+    "(mamba-ssm, causal-conv1d), which needs a CUDA toolchain. "
+    'Install it with: pip install --no-build-isolation -e ".[mamba]"'
+)
+
+
+def _load_mamba_mil():
+    """Claude: import the Mamba models on demand, with an actionable error."""
+    try:
+        from xmil.models.mamba_mil import MambaMILModel, xMambaMIL
+    except ImportError as err:
+        raise ImportError(_MAMBA_INSTALL_HINT) from err
+    return MambaMILModel, xMambaMIL
+
+
+def _mamba_mil_model_cls():
+    """Claude: MambaMILModel if the extra is installed, else None."""
+    try:
+        from xmil.models.mamba_mil import MambaMILModel
+    except ImportError:
+        return None
+    return MambaMILModel
 
 
 class ModelFactory:
@@ -81,6 +108,7 @@ class ModelFactory:
 
         elif model_args["aggregation_model"] == "mamba_mil":
 
+            MambaMILModel, _ = _load_mamba_mil()  # Claude: lazy import
             model = MambaMILModel(
                 input_dim=model_args["input_dim"],
                 head_dim=model_args["head_dim"],
@@ -141,7 +169,11 @@ class xModelFactory:
                 detach_pe=explanation_args.get("detach_pe", False),
                 use_ppeg=model.use_ppeg,
             )
-        elif isinstance(model, MambaMILModel):
+        # Claude: skip the Mamba branch entirely when the extra is absent.
+        elif (_mamba_cls := _mamba_mil_model_cls()) is not None and isinstance(
+            model, _mamba_cls
+        ):
+            _, xMambaMIL = _load_mamba_mil()  # Claude: lazy import
             xmodel = xMambaMIL(
                 model=model,
                 head_type=explanation_args.get("head_type", "classification"),

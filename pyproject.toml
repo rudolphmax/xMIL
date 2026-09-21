@@ -9,13 +9,14 @@ description = "Insightful explanations for multiple instance learning in histopa
 readme = "README.md"
 requires-python = ">=3.9"
 license = { file = "LICENSE" }
-dynamic = ["dependencies"]
+dynamic = ["dependencies", "optional-dependencies"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["pip_requirements.txt"] }
+optional-dependencies.mamba = { file = ["pip_requirements_mamba.txt"] }
 
 [tool.black]
 line-length = 88
