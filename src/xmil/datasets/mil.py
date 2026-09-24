@@ -188,7 +188,7 @@ class MILSlideDataset(Dataset):
         )
         if (
             not self.continuous
-        ):  # head_type != regression -> head_type = survival | classification
+        ):  # head_type = classification <=> head_type != regression | survival
             targets = targets.long()
 
         # Load (filtered) features
