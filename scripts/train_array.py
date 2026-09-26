@@ -250,7 +250,6 @@ def get_args():
         type=int,
         nargs="+",
         default=[0],
-        help="WARNING This is currently a dummy, seeding is not implemented.",
     )
 
     # Environment args
