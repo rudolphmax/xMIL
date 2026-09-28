@@ -229,6 +229,7 @@ def get_args():
     parser.add_argument("--optimizer", type=str, default="SGD")
     parser.add_argument("--grad-clip", type=float, default=None)
     parser.add_argument("--warmup", type=int, default=0)
+    parser.add_argument("--seed", type=int, default=None)
 
     # Testing args
     parser.add_argument(
@@ -301,7 +302,7 @@ def main(args=None):
 
     if args.seed is not None:
         random.seed(args.seed)
-        np.random.default_rng(args.seed)
+        np.random.seed(args.seed)
         torch.manual_seed(args.seed)  # CUDA + dataloaders
 
     # Set up dataset structures
