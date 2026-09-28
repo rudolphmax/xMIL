@@ -1,15 +1,15 @@
-import os
-import json
 import argparse
+import json
+import os
+import random
 from datetime import datetime
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import torch
-
-from xmil.splits import balance_labels
 from xmil.datasets import DatasetFactory
 from xmil.models import ModelFactory
+from xmil.splits import balance_labels
 from xmil.training import (
     Callback,
     TrainTestExecutor,
@@ -229,6 +229,7 @@ def get_args():
     parser.add_argument("--optimizer", type=str, default="SGD")
     parser.add_argument("--grad-clip", type=float, default=None)
     parser.add_argument("--warmup", type=int, default=0)
+    parser.add_argument("--seed", type=int, default=None)
 
     # Testing args
     parser.add_argument(
@@ -293,10 +294,16 @@ def main(args=None):
             subsets=args.train_subsets,
             group_key=args.balance_key,
             strategy="drop",
-            seed=None,
+            seed=args.seed,
         )[df_split.keys()]
+
         args.split_path = os.path.join(save_dir, "split.csv")
         df_split_bal.to_csv(args.split_path)
+
+    if args.seed is not None:
+        random.seed(args.seed)
+        np.random.seed(args.seed)
+        torch.manual_seed(args.seed)  # CUDA + dataloaders
 
     # Set up dataset structures
     train_dataset, train_loader, val_dataset, val_loader, test_dataset, test_loader = (
