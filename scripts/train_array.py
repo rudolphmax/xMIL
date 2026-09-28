@@ -1,14 +1,20 @@
-import os
-import json
 import argparse
-from itertools import product
 import hashlib
+import json
+import os
+import sys
+from itertools import product
+from pathlib import Path
 
+import pandas as pd
 from train import main as train
+
+sys.path.insert(0, "external/xmil/src")
+
 from xmil.training import add_logging_arguments
 
 
-def get_args():
+def get_args() -> dict:  # noqa: PLR0915
     parser = argparse.ArgumentParser()
 
     # Modalities
@@ -126,7 +132,7 @@ def get_args():
         "--targets",
         nargs="+",
         type=str,
-        default=["label"],
+        default=None,
         help="The target labels to predict.",
     )
     parser.add_argument("--no-bias", action="store_true")
@@ -153,7 +159,7 @@ def get_args():
     )
 
     parser.add_argument("--metric-name", type=str, nargs="+", default=None)
-    # todo: the decision_metric should be set up for classification as well. for survival it should work with 'c_index'
+    # TODO: the decision_metric should be set up for classification as well. for survival it should work with 'c_index'
     parser.add_argument(
         "--ref-value",
         type=float,
@@ -252,6 +258,12 @@ def get_args():
         default=[0],
         help="WARNING This is currently a dummy, seeding is not implemented.",
     )
+    parser.add_argument(
+        "--auto-seed-number",
+        type=int,
+        default=None,
+        help="The number of seeds to automatically choose per array job (--seed will be ignored).",
+    )
 
     # Environment args
     parser.add_argument("--device", type=str, default="cpu")
@@ -271,11 +283,11 @@ def get_args():
     return args
 
 
-def get_hopt_combination(args):
-    """
-    Selects the combination of args for the current run based on the SLURM_ARRAY_TASK_ID environment variable.
-    """
+def get_hopt_combination(args: dict) -> dict:
+    """Selects the combination of args for the current run based on the SLURM_ARRAY_TASK_ID environment variable."""
+
     array_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
+
     hopt_combinations = list(
         product(
             list(zip(args.train_subsets, args.val_subsets, args.test_subsets)),
@@ -292,6 +304,7 @@ def get_hopt_combination(args):
             args.grad_clip,
             args.seed,
             args.optimizer,
+            args.targets,
         )
     )
     (
@@ -309,7 +322,10 @@ def get_hopt_combination(args):
         args.grad_clip,
         args.seed,
         args.optimizer,
+        target,
     ) = hopt_combinations[array_id]
+
+    args.targets = [target]
 
     if args.grad_clip is not None and args.grad_clip < 0:
         args.grad_clip = None
@@ -317,20 +333,41 @@ def get_hopt_combination(args):
         args.ref_value = None
 
     if args.save_folder == "hashlib_sha256":
-        config_string = "_".join(f"{str(k)}*{str(v)}" for k, v in vars(args).items())
+        config_string = "_".join(f"{k!s}*{v!s}" for k, v in vars(args).items())
         hash_object = hashlib.sha256(config_string.encode())
         unique_id = hash_object.hexdigest()[:10]
     else:  # elif args.save_folder == 'task_id':
         unique_id = str(array_id)
 
-    args.results_dir = os.path.join(args.results_dir, unique_id)
+    args.results_dir = str(Path(args.results_dir) / unique_id)
     return args
 
 
-def main():
+def main() -> None:
     args = get_args()
+
+    wandb_tags = args.wandb_tags or []
+    auto_targets = False
+
+    # automatically select targets from split header when not explicitly provided
+    if not args.targets:
+        cols = pd.read_csv(args.split_path, nrows=0).columns.tolist()
+        args.targets = cols[1:-1]
+        auto_targets = True
+
     args = get_hopt_combination(args)
-    train(args)
+
+    if auto_targets:
+        wandb_tags = [*wandb_tags, *args.targets]
+
+    if args.auto_seed_number is not None:
+        for i in range(args.auto_seed_number):
+            args.seed = i
+            args.wandb_tags = [*wandb_tags, f"seed_{i}"]
+            train(args)
+
+    else:
+        train(args)
 
 
 if __name__ == "__main__":
