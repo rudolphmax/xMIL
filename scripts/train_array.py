@@ -345,7 +345,6 @@ def get_hopt_combination(args: dict) -> dict:
 def main() -> None:
     args = get_args()
 
-    wandb_tags = args.wandb_tags or []
     auto_targets = False
 
     split_dir = Path(args.split_path) if Path(args.split_path).is_dir() else None
@@ -366,7 +365,9 @@ def main() -> None:
         args.split_path = str(split_dir / f"{args.targets[0]}.csv")
 
     if auto_targets:
-        wandb_tags = [*wandb_tags, *args.targets]
+        args.wandb_tags = [*(args.wandb_tags or []), *args.targets]
+
+    wandb_tags = args.wandb_tags
 
     if args.auto_seed_number is not None:
         for i in range(args.auto_seed_number):
