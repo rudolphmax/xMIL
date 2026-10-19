@@ -348,13 +348,22 @@ def main() -> None:
     wandb_tags = args.wandb_tags or []
     auto_targets = False
 
+    split_dir = Path(args.split_path) if Path(args.split_path).is_dir() else None
+
     # automatically select targets from split header when not explicitly provided
     if not args.targets:
-        cols = pd.read_csv(args.split_path, nrows=0).columns.tolist()
-        args.targets = cols[1:-1]
+        if split_dir is not None:
+            args.targets = (split_dir / "targets.txt").read_text().split()
+        else:
+            cols = pd.read_csv(args.split_path, nrows=0).columns.tolist()
+            args.targets = cols[1:-1]
+
         auto_targets = True
 
     args = get_hopt_combination(args)
+
+    if split_dir is not None:
+        args.split_path = str(split_dir / f"{args.targets[0]}.csv")
 
     if auto_targets:
         wandb_tags = [*wandb_tags, *args.targets]
