@@ -76,6 +76,7 @@ class MILSlideDataset(Dataset):
         split_metadata = split_metadata[
             split_metadata["slide_id"].isin(slides_ids)
         ].reset_index(drop=True)
+
         # Drop duplicates
         if drop_duplicates == "sample":
             split_metadata = split_metadata.drop_duplicates(
@@ -89,6 +90,11 @@ class MILSlideDataset(Dataset):
             raise ValueError(
                 f"Unknown level for dropping duplicates: {drop_duplicates}"
             )
+
+        # Drop samples without a target (= NaN)
+        split_metadata = split_metadata.dropna(subset=self.label_cols).reset_index(
+            drop=True
+        )
         self.split_metadata = split_metadata
         # Load patch metadata and data
         self.feature_indices, self.patch_ids, self.positions_x, self.positions_y = (
