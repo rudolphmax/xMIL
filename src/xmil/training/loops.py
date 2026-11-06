@@ -3,8 +3,10 @@ import os
 import torch
 import numpy as np
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 from sksurv.metrics import concordance_index_censored
 from xmil.training.metrics import RegressionPerformanceMetric
+from xmil.training.plotting import plot_pred_vs_target
 
 
 def _get_empty_auc_dict(lbl_names):
@@ -160,6 +162,23 @@ def train_regression_model(
             perf_metrics_val = metrics_calculator.compute_metrics_regression(
                 all_targets, all_preds, ref_value
             )
+
+            if logger is not None and (i_epoch // n_epoch_val) % 10 == 0:
+                fig = plot_pred_vs_target(
+                    all_preds.detach().cpu().numpy(),
+                    all_targets.cpu().numpy(),
+                    title=f"val, epoch {i_epoch}",
+                )
+
+                callback.log_figure(
+                    logger,
+                    fig=fig,
+                    name="pred-target-scatter",
+                    subset="val",
+                    step=i_epoch,
+                )
+
+                plt.close(fig)
 
             if verbose:
                 print(

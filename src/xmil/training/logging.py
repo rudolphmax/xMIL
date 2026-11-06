@@ -41,6 +41,9 @@ class TensorBoardLogger:
     def log_scalar(self, name, value, step):
         self.writer.add_scalar(name, value, step)
 
+    def log_figure(self, name, fig, step):
+        self.writer.add_figure(name, fig, step)
+
     def set_summary(self, metrics):
         pass
 
@@ -95,6 +98,7 @@ class WandbLogger:
         if name not in self.defined_metrics:
             self.run.define_metric(name, step_metric=step_name)
             self.defined_metrics.add(name)
+
         self.run.log({name: value, step_name: step})
 
     def set_summary(self, metrics):
@@ -108,6 +112,17 @@ class WandbLogger:
                 log=self.watch_mode,
                 log_freq=self.watch_log_frequency,
             )
+
+    def log_figure(self, name, fig, step):
+        import wandb
+
+        step_name = f"step/{name}"
+
+        if name not in self.defined_metrics:
+            self.run.define_metric(name, step_metric=step_name)
+            self.defined_metrics.add(name)
+
+        self.run.log({name: wandb.Image(fig), step_name: step})
 
     def close(self):
         self.run.finish()

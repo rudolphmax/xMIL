@@ -8,7 +8,6 @@ from sklearn.metrics import roc_auc_score
 
 
 class Callback:
-
     def __init__(
         self,
         schedule_lr,
@@ -77,11 +76,19 @@ class Callback:
     def log_metrics(logger, metric, subset, step=0):
         if logger is None:
             return
+
         for key, val in metric.items():
             if isinstance(val, torch.Tensor):
                 val = val.item()
             if val is not None:
                 logger.log_scalar(f"{key}/{subset}", val, step)
+
+    @staticmethod
+    def log_figure(logger, fig, name, subset, step=0):
+        if logger is None:
+            return
+
+        logger.log_figure(f"{name}/{subset}", fig, step)
 
     def get_best_model(
         self,
