@@ -21,8 +21,12 @@ class Callback:
         device="cpu",
         results_dir=None,
         warmup_epoch=0,
+        lr_gamma=0.1,
+        lr_step_size=10,
     ):
         self.schedule_lr = schedule_lr
+        self.lr_gamma = lr_gamma
+        self.lr_step_size = lr_step_size
         self.checkpoint_epoch = checkpoint_epoch
         self.path_checkpoints = path_checkpoints
         self.n_batch_verbose = n_batch_verbose
@@ -38,7 +42,10 @@ class Callback:
 
     def lr_schedule(self, optimizer, current_epoch_num, lr_init):
         if self.schedule_lr:
-            lr = lr_init / 10 ** np.floor(current_epoch_num / 10)
+            lr = lr_init * self.lr_gamma ** np.floor(
+                current_epoch_num / self.lr_step_size
+            )
+
             for param_group in optimizer.param_groups:
                 param_group["lr"] = lr
 

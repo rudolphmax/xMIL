@@ -221,11 +221,15 @@ def get_args():
     parser.add_argument("--learning-rate", type=float, default=5e-3)
     parser.add_argument("--weight-decay", type=float, default=0.001)
     parser.add_argument("--schedule-lr", action="store_true")
+    parser.add_argument("--lr-gamma", type=float, default=0.1)
+    parser.add_argument("--lr-step-size", type=int, default=10)
     parser.add_argument("--loss-type", type=str, default="cross-entropy")
     parser.add_argument("--num-epochs", type=int, default=100)
     parser.add_argument("--val-interval", type=int, default=1)
     parser.add_argument("--early-stopping", action="store_true")
+    parser.add_argument("--patience", type=int, default=3)
     parser.add_argument("--stop-criterion", type=str, default="loss")
+    parser.add_argument("--min-epoch-num", type=int, default=10)
     parser.add_argument("--optimizer", type=str, default="SGD")
     parser.add_argument("--grad-clip", type=float, default=None)
     parser.add_argument("--warmup", type=int, default=0)
@@ -329,9 +333,13 @@ def main(args=None):
     # Set up callback
     callback = Callback(
         schedule_lr=args.schedule_lr,
+        lr_gamma=args.lr_gamma,
+        lr_step_size=args.lr_step_size,
         checkpoint_epoch=args.val_interval,
         path_checkpoints=save_dir,
         stop_criterion=args.stop_criterion,
+        min_epoch_num=args.min_epoch_num,
+        patience=args.patience,
         early_stop=args.early_stopping,
     )
 
